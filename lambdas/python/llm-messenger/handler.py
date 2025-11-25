@@ -76,7 +76,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, str]:
         special_requests = passenger.get('special_requests', [])
         
         # Build prompt
-        prompt = f"""Generate a personalized, empathetic notification message for a Southwest Airlines passenger.
+        prompt = f"""Generate a personalized, empathetic notification message for an airline passenger.
 
 Passenger Details:
 - Name: {first_name}

@@ -4,7 +4,7 @@
 
 FlightPulse is a serverless, event-driven flight operations system that demonstrates modern AWS architecture patterns. The system ingests flight operation events (delays, cancellations, gate changes) from Kafka, enriches and routes them through EventBridge, orchestrates multi-step notification workflows via Step Functions, and delivers personalized passenger notifications using LLM-generated messaging.
 
-**Purpose:** Portfolio project demonstrating proficiency in AWS serverless stack for Southwest Airlines technical interview.
+**Purpose:** Portfolio project demonstrating proficiency in AWS serverless stack for modern airline operations.
 
 **Scope:** Core event flow with working end-to-end demo capability (not production-ready).
 
