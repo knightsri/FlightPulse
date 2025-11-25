@@ -10,9 +10,11 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { NetworkConstruct } from './network-construct';
+import { MonitoringConstruct } from './monitoring-construct';
 
 export class FlightPulseStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -70,6 +72,12 @@ export class FlightPulseStack extends cdk.Stack {
     // Dead Letter Queue for Step Functions failures
     const dlq = new sqs.Queue(this, 'WorkflowDLQ', {
       retentionPeriod: cdk.Duration.days(14),
+    });
+
+    // SNS Topic for error notifications
+    const errorTopic = new sns.Topic(this, 'WorkflowErrorTopic', {
+      displayName: 'FlightPulse Workflow Errors',
+      topicName: 'flightpulse-workflow-errors',
     });
 
     // Kafka Consumer Lambda (Python)
@@ -179,9 +187,9 @@ export class FlightPulseStack extends cdk.Stack {
     });
 
     // Step Functions State Machines
-    const delayWorkflow = this.createDelayWorkflow(this, table, llmMessenger, eventBus, dlq);
-    const cancellationWorkflow = this.createCancellationWorkflow(this, table, llmMessenger, eventBus, dlq);
-    const gateChangeWorkflow = this.createGateChangeWorkflow(this, table, llmMessenger, eventBus, dlq);
+    const delayWorkflow = this.createDelayWorkflow(this, table, llmMessenger, eventBus, dlq, errorTopic);
+    const cancellationWorkflow = this.createCancellationWorkflow(this, table, llmMessenger, eventBus, dlq, errorTopic);
+    const gateChangeWorkflow = this.createGateChangeWorkflow(this, table, llmMessenger, eventBus, dlq, errorTopic);
 
     // EventBridge Rules
     eventBus.addRule('DelayMinorRule', {
@@ -286,10 +294,27 @@ export class FlightPulseStack extends cdk.Stack {
     const bookings = api.root.addResource('bookings');
     bookings.addResource('{bookingId}').addMethod('GET', apiIntegration);
 
+    // Monitoring & Alarms
+    const monitoring = new MonitoringConstruct(this, 'Monitoring', {
+      alarmEmail: this.node.tryGetContext('alarmEmail'),
+      lambdaFunctions: [kafkaConsumer, llmMessenger, apiHandlers, streamHandler],
+      table,
+      stateMachines: [delayWorkflow, cancellationWorkflow, gateChangeWorkflow],
+    });
+
+    // Create CloudWatch Dashboard
+    monitoring.createDashboard(
+      [kafkaConsumer, llmMessenger, apiHandlers, streamHandler],
+      table,
+      [delayWorkflow, cancellationWorkflow, gateChangeWorkflow]
+    );
+
     // Outputs
     new cdk.CfnOutput(this, 'TableName', { value: table.tableName });
     new cdk.CfnOutput(this, 'EventBusName', { value: eventBus.eventBusName });
     new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
+    new cdk.CfnOutput(this, 'ErrorTopicArn', { value: errorTopic.topicArn });
+    new cdk.CfnOutput(this, 'AlarmTopicArn', { value: monitoring.alarmTopic.topicArn });
   }
 
   private createDelayWorkflow(
@@ -297,9 +322,21 @@ export class FlightPulseStack extends cdk.Stack {
     table: dynamodb.Table,
     llmMessenger: lambda.Function,
     eventBus: events.EventBus,
-    dlq: sqs.Queue
+    dlq: sqs.Queue,
+    errorTopic: sns.Topic
   ): sfn.StateMachine {
-    // GetAffectedBookings
+    // Failure notification state
+    const notifyFailure = new sfnTasks.SnsPublish(scope, 'NotifyDelayFailure', {
+      topic: errorTopic,
+      message: sfn.TaskInput.fromObject({
+        workflow: 'DelayNotification',
+        error: sfn.JsonPath.stringAt('$.Error'),
+        cause: sfn.JsonPath.stringAt('$.Cause'),
+        input: sfn.JsonPath.entirePayload,
+      }),
+    });
+
+    // GetAffectedBookings with error handling
     const getBookings = new sfnTasks.DynamoDBQuery(scope, 'GetAffectedBookings', {
       table,
       keyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
@@ -309,6 +346,8 @@ export class FlightPulseStack extends cdk.Stack {
         ),
         ':sk': sfnTasks.DynamoAttributeValue.fromString('BOOKING#'),
       },
+    }).addCatch(notifyFailure, {
+      resultPath: '$.error',
     });
 
     // Process bookings if they exist
@@ -319,7 +358,7 @@ export class FlightPulseStack extends cdk.Stack {
       .when(sfn.Condition.numberGreaterThan('$.Count', 0), processBookings)
       .otherwise(new sfn.Pass(scope, 'NoBookingsFound'));
 
-    // UpdateFlightStatus (always executed)
+    // UpdateFlightStatus with error handling
     const updateFlight = new sfnTasks.DynamoDBUpdateItem(scope, 'UpdateFlightStatus', {
       table,
       key: {
@@ -338,12 +377,17 @@ export class FlightPulseStack extends cdk.Stack {
         ':reason': sfnTasks.DynamoAttributeValue.fromString(sfn.JsonPath.stringAt('$.detail.reason')),
         ':gsi1pk': sfnTasks.DynamoAttributeValue.fromString('DELAYED'),
       },
+    }).addCatch(notifyFailure, {
+      resultPath: '$.error',
     });
 
-    // Parallel execution: process bookings and update flight status
+    // Parallel execution with error handling
     const parallelExecution = new sfn.Parallel(scope, 'ProcessAndUpdate')
       .branch(checkBookings)
-      .branch(updateFlight);
+      .branch(updateFlight)
+      .addCatch(notifyFailure, {
+        resultPath: '$.error',
+      });
 
     const definition = getBookings
       .next(parallelExecution)
@@ -352,11 +396,10 @@ export class FlightPulseStack extends cdk.Stack {
     return new sfn.StateMachine(scope, 'DelayNotificationWorkflow', {
       definition,
       tracingEnabled: true,
-      deadLetterQueueEnabled: true,
-      deadLetterQueue: dlq,
       logs: {
         destination: new logs.LogGroup(scope, 'DelayWorkflowLogs', {
           logGroupName: '/aws/stepfunctions/DelayNotification',
+          retention: logs.RetentionDays.ONE_WEEK,
         }),
         level: sfn.LogLevel.ALL,
       },
@@ -452,7 +495,8 @@ export class FlightPulseStack extends cdk.Stack {
     table: dynamodb.Table,
     llmMessenger: lambda.Function,
     eventBus: events.EventBus,
-    dlq: sqs.Queue
+    dlq: sqs.Queue,
+    errorTopic: sns.Topic
   ): sfn.StateMachine {
     const getBookings = new sfnTasks.DynamoDBQuery(scope, 'GetAffectedBookings', {
       table,
@@ -512,8 +556,13 @@ export class FlightPulseStack extends cdk.Stack {
     return new sfn.StateMachine(scope, 'CancellationWorkflow', {
       definition,
       tracingEnabled: true,
-      deadLetterQueueEnabled: true,
-      deadLetterQueue: dlq,
+      logs: {
+        destination: new logs.LogGroup(scope, 'CancellationWorkflowLogs', {
+          logGroupName: '/aws/stepfunctions/CancellationNotification',
+          retention: logs.RetentionDays.ONE_WEEK,
+        }),
+        level: sfn.LogLevel.ALL,
+      },
     });
   }
 
@@ -522,7 +571,8 @@ export class FlightPulseStack extends cdk.Stack {
     table: dynamodb.Table,
     llmMessenger: lambda.Function,
     eventBus: events.EventBus,
-    dlq: sqs.Queue
+    dlq: sqs.Queue,
+    errorTopic: sns.Topic
   ): sfn.StateMachine {
     const updateGate = new sfnTasks.DynamoDBUpdateItem(scope, 'UpdateFlightGate', {
       table,
@@ -557,8 +607,13 @@ export class FlightPulseStack extends cdk.Stack {
     return new sfn.StateMachine(scope, 'GateChangeWorkflow', {
       definition,
       tracingEnabled: true,
-      deadLetterQueueEnabled: true,
-      deadLetterQueue: dlq,
+      logs: {
+        destination: new logs.LogGroup(scope, 'GateChangeWorkflowLogs', {
+          logGroupName: '/aws/stepfunctions/GateChangeNotification',
+          retention: logs.RetentionDays.ONE_WEEK,
+        }),
+        level: sfn.LogLevel.ALL,
+      },
     });
   }
 }
