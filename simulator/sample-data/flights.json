@@ -1,0 +1,78 @@
+[
+  {
+    "PK": "FLIGHT#SW1234",
+    "SK": "METADATA",
+    "flight_id": "SW1234",
+    "origin": "DAL",
+    "destination": "LAX",
+    "scheduled_departure": "2025-01-15T08:00:00Z",
+    "scheduled_arrival": "2025-01-15T10:30:00Z",
+    "status": "SCHEDULED",
+    "gate": "A12",
+    "aircraft": "737-800",
+    "delay_minutes": 0,
+    "GSI1PK": "SCHEDULED",
+    "GSI1SK": "2025-01-15T08:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW5678",
+    "SK": "METADATA",
+    "flight_id": "SW5678",
+    "origin": "HOU",
+    "destination": "DEN",
+    "scheduled_departure": "2025-01-15T09:30:00Z",
+    "scheduled_arrival": "2025-01-15T11:45:00Z",
+    "status": "SCHEDULED",
+    "gate": "B7",
+    "aircraft": "737-800",
+    "delay_minutes": 0,
+    "GSI1PK": "SCHEDULED",
+    "GSI1SK": "2025-01-15T09:30:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW9012",
+    "SK": "METADATA",
+    "flight_id": "SW9012",
+    "origin": "PHX",
+    "destination": "OAK",
+    "scheduled_departure": "2025-01-15T10:00:00Z",
+    "scheduled_arrival": "2025-01-15T11:30:00Z",
+    "status": "SCHEDULED",
+    "gate": "C3",
+    "aircraft": "737-700",
+    "delay_minutes": 0,
+    "GSI1PK": "SCHEDULED",
+    "GSI1SK": "2025-01-15T10:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW3456",
+    "SK": "METADATA",
+    "flight_id": "SW3456",
+    "origin": "LAS",
+    "destination": "SEA",
+    "scheduled_departure": "2025-01-15T11:15:00Z",
+    "scheduled_arrival": "2025-01-15T13:45:00Z",
+    "status": "SCHEDULED",
+    "gate": "A5",
+    "aircraft": "737-800",
+    "delay_minutes": 0,
+    "GSI1PK": "SCHEDULED",
+    "GSI1SK": "2025-01-15T11:15:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW7890",
+    "SK": "METADATA",
+    "flight_id": "SW7890",
+    "origin": "SAN",
+    "destination": "PDX",
+    "scheduled_departure": "2025-01-15T14:00:00Z",
+    "scheduled_arrival": "2025-01-15T16:15:00Z",
+    "status": "SCHEDULED",
+    "gate": "B12",
+    "aircraft": "737-700",
+    "delay_minutes": 0,
+    "GSI1PK": "SCHEDULED",
+    "GSI1SK": "2025-01-15T14:00:00Z"
+  }
+]
+

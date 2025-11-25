@@ -1,0 +1,118 @@
+# CDK
+cdk.out/
+*.js
+!jest.config.js
+*.d.ts
+*.tsbuildinfo
+cdk.context.json
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+yarn.lock
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Build outputs
+dist/
+build/
+*.zip
+*.tar.gz
+
+# AWS
+.aws-sam/
+samconfig.toml
+.aws/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*~
+
+# Lambda deployment packages
+*.zip
+lambdas/**/node_modules/
+lambdas/**/dist/
+lambdas/**/__pycache__/
+lambdas/**/*.pyc
+
+# Local development
+.local/
+local/
+*.local
+
+# Docker
+.dockerignore
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# TypeScript
+*.tsbuildinfo
+
+# CDK Asset staging directory
+.cdk.staging/
+cdk.out/

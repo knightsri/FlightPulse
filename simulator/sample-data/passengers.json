@@ -1,0 +1,165 @@
+[
+  {
+    "PK": "PASSENGER#P001",
+    "SK": "METADATA",
+    "passenger_id": "P001",
+    "first_name": "John",
+    "last_name": "Smith",
+    "email": "john.smith@example.com",
+    "phone": "+15551234567",
+    "rapid_rewards_number": "RR123456789",
+    "tier": "A-LIST PREFERRED",
+    "notification_preferences": {
+      "email": true,
+      "sms": true,
+      "push": true
+    }
+  },
+  {
+    "PK": "PASSENGER#P002",
+    "SK": "METADATA",
+    "passenger_id": "P002",
+    "first_name": "Sarah",
+    "last_name": "Johnson",
+    "email": "sarah.j@example.com",
+    "phone": "+15551234568",
+    "rapid_rewards_number": "RR987654321",
+    "tier": "A-LIST",
+    "notification_preferences": {
+      "email": true,
+      "sms": false,
+      "push": true
+    }
+  },
+  {
+    "PK": "PASSENGER#P003",
+    "SK": "METADATA",
+    "passenger_id": "P003",
+    "first_name": "Michael",
+    "last_name": "Brown",
+    "email": "m.brown@example.com",
+    "phone": "+15551234569",
+    "rapid_rewards_number": "RR456789123",
+    "tier": "A-LIST",
+    "notification_preferences": {
+      "email": true,
+      "sms": true,
+      "push": false
+    },
+    "special_requests": ["wheelchair_assistance"]
+  },
+  {
+    "PK": "PASSENGER#P004",
+    "SK": "METADATA",
+    "passenger_id": "P004",
+    "first_name": "Emily",
+    "last_name": "Davis",
+    "email": "emily.d@example.com",
+    "phone": "+15551234570",
+    "rapid_rewards_number": "RR789123456",
+    "tier": "A-LIST",
+    "notification_preferences": {
+      "email": true,
+      "sms": true,
+      "push": true
+    }
+  },
+  {
+    "PK": "PASSENGER#P005",
+    "SK": "METADATA",
+    "passenger_id": "P005",
+    "first_name": "David",
+    "last_name": "Wilson",
+    "email": "d.wilson@example.com",
+    "phone": "+15551234571",
+    "rapid_rewards_number": "RR321654987",
+    "tier": "MEMBER",
+    "notification_preferences": {
+      "email": true,
+      "sms": false,
+      "push": false
+    }
+  },
+  {
+    "PK": "PASSENGER#P006",
+    "SK": "METADATA",
+    "passenger_id": "P006",
+    "first_name": "Lisa",
+    "last_name": "Anderson",
+    "email": "lisa.a@example.com",
+    "phone": "+15551234572",
+    "rapid_rewards_number": "RR654321987",
+    "tier": "MEMBER",
+    "notification_preferences": {
+      "email": false,
+      "sms": true,
+      "push": true
+    }
+  },
+  {
+    "PK": "PASSENGER#P007",
+    "SK": "METADATA",
+    "passenger_id": "P007",
+    "first_name": "Robert",
+    "last_name": "Taylor",
+    "email": "r.taylor@example.com",
+    "phone": "+15551234573",
+    "rapid_rewards_number": "RR147258369",
+    "tier": "MEMBER",
+    "notification_preferences": {
+      "email": true,
+      "sms": true,
+      "push": false
+    }
+  },
+  {
+    "PK": "PASSENGER#P008",
+    "SK": "METADATA",
+    "passenger_id": "P008",
+    "first_name": "Jennifer",
+    "last_name": "Martinez",
+    "email": "j.martinez@example.com",
+    "phone": "+15551234574",
+    "rapid_rewards_number": "RR258369147",
+    "tier": "MEMBER",
+    "notification_preferences": {
+      "email": true,
+      "sms": false,
+      "push": false
+    }
+  },
+  {
+    "PK": "PASSENGER#P009",
+    "SK": "METADATA",
+    "passenger_id": "P009",
+    "first_name": "William",
+    "last_name": "Garcia",
+    "email": "w.garcia@example.com",
+    "phone": "+15551234575",
+    "rapid_rewards_number": "RR369147258",
+    "tier": "A-LIST PREFERRED",
+    "notification_preferences": {
+      "email": true,
+      "sms": true,
+      "push": true
+    },
+    "special_requests": ["early_boarding"]
+  },
+  {
+    "PK": "PASSENGER#P010",
+    "SK": "METADATA",
+    "passenger_id": "P010",
+    "first_name": "Amanda",
+    "last_name": "Lee",
+    "email": "amanda.l@example.com",
+    "phone": "+15551234576",
+    "rapid_rewards_number": "RR741852963",
+    "tier": "MEMBER",
+    "notification_preferences": {
+      "email": true,
+      "sms": true,
+      "push": true
+    }
+  }
+]
+

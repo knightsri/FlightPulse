@@ -1,0 +1,423 @@
+[
+  {
+    "PK": "BOOKING#B001",
+    "SK": "METADATA",
+    "booking_id": "B001",
+    "passenger_id": "P001",
+    "flight_id": "SW1234",
+    "confirmation_number": "ABC123",
+    "seat": "12A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T10:00:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T10:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW1234",
+    "SK": "BOOKING#B001",
+    "booking_id": "B001",
+    "passenger_id": "P001"
+  },
+  {
+    "PK": "PASSENGER#P001",
+    "SK": "BOOKING#B001",
+    "booking_id": "B001",
+    "flight_id": "SW1234"
+  },
+  {
+    "PK": "BOOKING#B002",
+    "SK": "METADATA",
+    "booking_id": "B002",
+    "passenger_id": "P002",
+    "flight_id": "SW1234",
+    "confirmation_number": "DEF456",
+    "seat": "12B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T10:05:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T10:05:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW1234",
+    "SK": "BOOKING#B002",
+    "booking_id": "B002",
+    "passenger_id": "P002"
+  },
+  {
+    "PK": "PASSENGER#P002",
+    "SK": "BOOKING#B002",
+    "booking_id": "B002",
+    "flight_id": "SW1234"
+  },
+  {
+    "PK": "BOOKING#B003",
+    "SK": "METADATA",
+    "booking_id": "B003",
+    "passenger_id": "P003",
+    "flight_id": "SW1234",
+    "confirmation_number": "GHI789",
+    "seat": "13A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": true,
+    "bags_checked": 1,
+    "created_at": "2025-01-10T10:10:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T10:10:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW1234",
+    "SK": "BOOKING#B003",
+    "booking_id": "B003",
+    "passenger_id": "P003"
+  },
+  {
+    "PK": "PASSENGER#P003",
+    "SK": "BOOKING#B003",
+    "booking_id": "B003",
+    "flight_id": "SW1234"
+  },
+  {
+    "PK": "BOOKING#B004",
+    "SK": "METADATA",
+    "booking_id": "B004",
+    "passenger_id": "P004",
+    "flight_id": "SW1234",
+    "confirmation_number": "JKL012",
+    "seat": "13B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T10:15:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T10:15:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW1234",
+    "SK": "BOOKING#B004",
+    "booking_id": "B004",
+    "passenger_id": "P004"
+  },
+  {
+    "PK": "PASSENGER#P004",
+    "SK": "BOOKING#B004",
+    "booking_id": "B004",
+    "flight_id": "SW1234"
+  },
+  {
+    "PK": "BOOKING#B005",
+    "SK": "METADATA",
+    "booking_id": "B005",
+    "passenger_id": "P005",
+    "flight_id": "SW5678",
+    "confirmation_number": "MNO345",
+    "seat": "15A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T11:00:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T11:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW5678",
+    "SK": "BOOKING#B005",
+    "booking_id": "B005",
+    "passenger_id": "P005"
+  },
+  {
+    "PK": "PASSENGER#P005",
+    "SK": "BOOKING#B005",
+    "booking_id": "B005",
+    "flight_id": "SW5678"
+  },
+  {
+    "PK": "BOOKING#B006",
+    "SK": "METADATA",
+    "booking_id": "B006",
+    "passenger_id": "P006",
+    "flight_id": "SW5678",
+    "confirmation_number": "PQR678",
+    "seat": "15B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": true,
+    "bags_checked": 2,
+    "created_at": "2025-01-10T11:05:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T11:05:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW5678",
+    "SK": "BOOKING#B006",
+    "booking_id": "B006",
+    "passenger_id": "P006"
+  },
+  {
+    "PK": "PASSENGER#P006",
+    "SK": "BOOKING#B006",
+    "booking_id": "B006",
+    "flight_id": "SW5678"
+  },
+  {
+    "PK": "BOOKING#B007",
+    "SK": "METADATA",
+    "booking_id": "B007",
+    "passenger_id": "P007",
+    "flight_id": "SW5678",
+    "confirmation_number": "STU901",
+    "seat": "16A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T11:10:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T11:10:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW5678",
+    "SK": "BOOKING#B007",
+    "booking_id": "B007",
+    "passenger_id": "P007"
+  },
+  {
+    "PK": "PASSENGER#P007",
+    "SK": "BOOKING#B007",
+    "booking_id": "B007",
+    "flight_id": "SW5678"
+  },
+  {
+    "PK": "BOOKING#B008",
+    "SK": "METADATA",
+    "booking_id": "B008",
+    "passenger_id": "P008",
+    "flight_id": "SW5678",
+    "confirmation_number": "VWX234",
+    "seat": "16B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T11:15:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T11:15:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW5678",
+    "SK": "BOOKING#B008",
+    "booking_id": "B008",
+    "passenger_id": "P008"
+  },
+  {
+    "PK": "PASSENGER#P008",
+    "SK": "BOOKING#B008",
+    "booking_id": "B008",
+    "flight_id": "SW5678"
+  },
+  {
+    "PK": "BOOKING#B009",
+    "SK": "METADATA",
+    "booking_id": "B009",
+    "passenger_id": "P009",
+    "flight_id": "SW9012",
+    "confirmation_number": "YZA567",
+    "seat": "10A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": true,
+    "bags_checked": 1,
+    "created_at": "2025-01-10T12:00:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T12:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW9012",
+    "SK": "BOOKING#B009",
+    "booking_id": "B009",
+    "passenger_id": "P009"
+  },
+  {
+    "PK": "PASSENGER#P009",
+    "SK": "BOOKING#B009",
+    "booking_id": "B009",
+    "flight_id": "SW9012"
+  },
+  {
+    "PK": "BOOKING#B010",
+    "SK": "METADATA",
+    "booking_id": "B010",
+    "passenger_id": "P010",
+    "flight_id": "SW9012",
+    "confirmation_number": "BCD890",
+    "seat": "10B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T12:05:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T12:05:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW9012",
+    "SK": "BOOKING#B010",
+    "booking_id": "B010",
+    "passenger_id": "P010"
+  },
+  {
+    "PK": "PASSENGER#P010",
+    "SK": "BOOKING#B010",
+    "booking_id": "B010",
+    "flight_id": "SW9012"
+  },
+  {
+    "PK": "BOOKING#B011",
+    "SK": "METADATA",
+    "booking_id": "B011",
+    "passenger_id": "P001",
+    "flight_id": "SW3456",
+    "confirmation_number": "EFG123",
+    "seat": "8A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T13:00:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T13:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW3456",
+    "SK": "BOOKING#B011",
+    "booking_id": "B011",
+    "passenger_id": "P001"
+  },
+  {
+    "PK": "PASSENGER#P001",
+    "SK": "BOOKING#B011",
+    "booking_id": "B011",
+    "flight_id": "SW3456"
+  },
+  {
+    "PK": "BOOKING#B012",
+    "SK": "METADATA",
+    "booking_id": "B012",
+    "passenger_id": "P002",
+    "flight_id": "SW3456",
+    "confirmation_number": "HIJ456",
+    "seat": "8B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": true,
+    "bags_checked": 1,
+    "created_at": "2025-01-10T13:05:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T13:05:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW3456",
+    "SK": "BOOKING#B012",
+    "booking_id": "B012",
+    "passenger_id": "P002"
+  },
+  {
+    "PK": "PASSENGER#P002",
+    "SK": "BOOKING#B012",
+    "booking_id": "B012",
+    "flight_id": "SW3456"
+  },
+  {
+    "PK": "BOOKING#B013",
+    "SK": "METADATA",
+    "booking_id": "B013",
+    "passenger_id": "P003",
+    "flight_id": "SW3456",
+    "confirmation_number": "KLM789",
+    "seat": "9A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T13:10:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T13:10:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW3456",
+    "SK": "BOOKING#B013",
+    "booking_id": "B013",
+    "passenger_id": "P003"
+  },
+  {
+    "PK": "PASSENGER#P003",
+    "SK": "BOOKING#B013",
+    "booking_id": "B013",
+    "flight_id": "SW3456"
+  },
+  {
+    "PK": "BOOKING#B014",
+    "SK": "METADATA",
+    "booking_id": "B014",
+    "passenger_id": "P004",
+    "flight_id": "SW7890",
+    "confirmation_number": "NOP012",
+    "seat": "20A",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": false,
+    "bags_checked": 0,
+    "created_at": "2025-01-10T14:00:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T14:00:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW7890",
+    "SK": "BOOKING#B014",
+    "booking_id": "B014",
+    "passenger_id": "P004"
+  },
+  {
+    "PK": "PASSENGER#P004",
+    "SK": "BOOKING#B014",
+    "booking_id": "B014",
+    "flight_id": "SW7890"
+  },
+  {
+    "PK": "BOOKING#B015",
+    "SK": "METADATA",
+    "booking_id": "B015",
+    "passenger_id": "P005",
+    "flight_id": "SW7890",
+    "confirmation_number": "QRS345",
+    "seat": "20B",
+    "fare_class": "WGA",
+    "booking_status": "CONFIRMED",
+    "checked_in": true,
+    "bags_checked": 1,
+    "created_at": "2025-01-10T14:05:00Z",
+    "GSI2PK": "CONFIRMED",
+    "GSI2SK": "2025-01-10T14:05:00Z"
+  },
+  {
+    "PK": "FLIGHT#SW7890",
+    "SK": "BOOKING#B015",
+    "booking_id": "B015",
+    "passenger_id": "P005"
+  },
+  {
+    "PK": "PASSENGER#P005",
+    "SK": "BOOKING#B015",
+    "booking_id": "B015",
+    "flight_id": "SW7890"
+  }
+]
+
