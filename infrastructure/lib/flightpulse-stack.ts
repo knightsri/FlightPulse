@@ -25,6 +25,9 @@ export class FlightPulseStack extends cdk.Stack {
       ? cdk.RemovalPolicy.DESTROY
       : cdk.RemovalPolicy.RETAIN;
 
+    // Get environment from context (defaults to 'dev')
+    const environment = this.node.tryGetContext('environment') || 'dev';
+
     // Create VPC and network infrastructure
     const network = new NetworkConstruct(this, 'Network', {
       cidr: '10.0.0.0/16',
@@ -257,10 +260,34 @@ export class FlightPulseStack extends cdk.Stack {
       )],
     });
 
+    // API Gateway Access Logs
+    const apiAccessLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
+      logGroupName: '/aws/apigateway/flightpulse-api',
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // API Gateway
     const api = new apigateway.RestApi(this, 'FlightPulseApi', {
       restApiName: 'FlightPulse API',
       description: 'FlightPulse REST API',
+      deployOptions: {
+        accessLogDestination: new apigateway.LogGroupLogDestination(apiAccessLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
+          caller: true,
+          httpMethod: true,
+          ip: true,
+          protocol: true,
+          requestTime: true,
+          resourcePath: true,
+          responseLength: true,
+          status: true,
+          user: true,
+        }),
+        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: true,
+        metricsEnabled: true,
+      },
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
@@ -315,6 +342,13 @@ export class FlightPulseStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
     new cdk.CfnOutput(this, 'ErrorTopicArn', { value: errorTopic.topicArn });
     new cdk.CfnOutput(this, 'AlarmTopicArn', { value: monitoring.alarmTopic.topicArn });
+    new cdk.CfnOutput(this, 'ApiAccessLogGroup', { value: apiAccessLogGroup.logGroupName });
+
+    // Apply standard tags to all resources
+    cdk.Tags.of(this).add('Project', 'FlightPulse');
+    cdk.Tags.of(this).add('Environment', environment);
+    cdk.Tags.of(this).add('ManagedBy', 'CDK');
+    cdk.Tags.of(this).add('CostCenter', 'Engineering');
   }
 
   private createDelayWorkflow(
