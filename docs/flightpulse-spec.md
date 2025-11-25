@@ -77,6 +77,42 @@ graph TD
 
 ---
 
+### Event Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Simulator as Event Simulator
+    participant Kafka as Apache Kafka
+    participant Consumer as Kafka Consumer Lambda
+    participant EB as EventBridge
+    participant SF as Step Functions
+    participant DB as DynamoDB
+    participant LLM as LLM Messenger
+    participant CW as CloudWatch Logs
+
+    Simulator->>Kafka: Produce event<br/>(FLIGHT_DELAY, etc.)
+    Kafka->>Consumer: Consume event
+    Consumer->>DB: Enrich with flight details
+    Consumer->>EB: Publish enriched event<br/>(flight.delay.*, etc.)
+    
+    EB->>SF: Trigger workflow
+    SF->>DB: Query affected bookings
+    DB-->>SF: Return bookings list
+    
+    loop For each booking
+        SF->>DB: Get passenger details
+        DB-->>SF: Return passenger data
+        SF->>LLM: Generate personalized message
+        LLM-->>SF: Return email/SMS content
+        SF->>EB: Publish notification events
+        EB->>CW: Log notification (mock send)
+    end
+    
+    SF->>DB: Update flight status
+```
+
+---
+
 ## Technology Mapping
 
 | Component | Technology | Purpose |
@@ -683,6 +719,30 @@ Distribute across flights so each flight has 3-4 bookings.
 ---
 
 ## Test Scenarios
+
+```mermaid
+graph TD
+    S1[SW1234: 25 min delay] -->|Kafka| C1[Consumer]
+    C1 -->|categorize| E1[flight.delay.minor]
+    E1 --> W1[Delay Workflow]
+    W1 --> N1[Notifications Sent]
+    
+    S2[SW5678: 90 min delay] -->|Kafka| C2[Consumer]
+    C2 -->|categorize| E2[flight.delay.major]
+    E2 --> W2[Delay Workflow]
+    W2 --> N2[A-LIST Priority Messages]
+    
+    S3[SW9012: Cancelled] -->|Kafka| C3[Consumer]
+    C3 --> E3[flight.cancelled]
+    E3 --> W3[Cancellation Workflow]
+    W3 --> U3[Mark NEEDS_REBOOKING]
+    W3 --> N3[Apologetic Messages]
+    
+    S4[SW3456: Gate A5 → D15] -->|Kafka| C4[Consumer]
+    C4 -->|categorize| E4[flight.gate_change]
+    E4 --> W4[Gate Change Workflow]
+    W4 --> N4[Urgent Terminal Change SMS]
+```
 
 ### Scenario 1: Minor Delay
 
