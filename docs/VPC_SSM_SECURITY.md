@@ -14,35 +14,43 @@ Created a new `NetworkConstruct` that provides:
 - **Security group** for Lambda functions
 
 ### Architecture
+
+```mermaid
+graph TB
+    subgraph VPC["FlightPulse VPC (10.0.0.0/16)"]
+        subgraph PrivateSubnets["Private Isolated Subnets (2 AZs)"]
+            Lambda1["Lambda 1<br/>(Kafka Consumer)"]
+            Lambda2["Lambda 2<br/>(LLM Messenger)"]
+            Lambda3["Lambda 3<br/>(API Handlers)"]
+            Lambda4["Lambda 4<br/>(Stream Handler)"]
+        end
+        
+        subgraph Endpoints["VPC Endpoints"]
+            DDB["DynamoDB<br/>(Gateway)"]
+            S3["S3<br/>(Gateway)"]
+            LambdaEP["Lambda<br/>(Interface)"]
+            EB["EventBridge<br/>(Interface)"]
+            SFN["Step Functions<br/>(Interface)"]
+            CWL["CloudWatch Logs<br/>(Interface)"]
+            Bedrock["Bedrock Runtime<br/>(Interface)"]
+            SSM["SSM<br/>(Interface)"]
+            SQS["SQS<br/>(Interface)"]
+        end
+    end
+    
+    Lambda1 --> DDB
+    Lambda1 --> EB
+    Lambda2 --> DDB
+    Lambda2 --> Bedrock
+    Lambda2 --> SSM
+    Lambda3 --> DDB
+    Lambda4 --> EB
+    
+    style VPC fill:#e1f5ff
+    style PrivateSubnets fill:#fff3e0
+    style Endpoints fill:#f3e5f5
 ```
-┌─────────────────────────────────────────────────┐
-│                FlightPulse VPC                  │
-│                 10.0.0.0/16                     │
-│                                                 │
-│  ┌──────────────────────────────────────────┐  │
-│  │   Private Isolated Subnets (2 AZs)       │  │
-│  │                                          │  │
-│  │  ┌──────────┐  ┌──────────┐            │  │
-│  │  │ Lambda 1 │  │ Lambda 2 │  ...       │  │
-│  │  └────┬─────┘  └────┬─────┘            │  │
-│  │       │             │                   │  │
-│  │       └─────────────┴─────────────┐     │  │
-│  │                                   ▼     │  │
-│  │           ┌─────────────────────────┐   │  │
-│  │           │   VPC Endpoints         │   │  │
-│  │           │  - DynamoDB (Gateway)   │   │  │
-│  │           │  - S3 (Gateway)         │   │  │
-│  │           │  - Lambda               │   │  │
-│  │           │  - EventBridge          │   │  │
-│  │           │  - Step Functions       │   │  │
-│  │           │  - CloudWatch Logs      │   │  │
-│  │           │  - Bedrock Runtime      │   │  │
-│  │           │  - SSM                  │   │  │
-│  │           │  - SQS                  │   │  │
-│  │           └─────────────────────────┘   │  │
-│  └──────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────┘
-```
+
 
 ### Benefits
 - ✅ **No internet exposure** - Lambdas run in isolated subnets

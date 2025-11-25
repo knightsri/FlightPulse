@@ -85,30 +85,25 @@ Created `MonitoringConstruct` with comprehensive CloudWatch alarms for:
 
 ### Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│              CloudWatch Alarms                      │
-│                                                     │
-│  ┌─────────┐  ┌──────────┐  ┌──────────────┐     │
-│  │ Lambda  │  │ DynamoDB │  │Step Functions│     │
-│  │ Alarms  │  │  Alarms  │  │   Alarms     │     │
-│  └────┬────┘  └─────┬────┘  └──────┬───────┘     │
-│       │             │              │              │
-│       └─────────────┴──────────────┘              │
-│                     │                             │
-│                     ▼                             │
-│           ┌──────────────────┐                    │
-│           │   SNS Alarm      │                    │
-│           │     Topic        │                    │
-│           └────────┬─────────┘                    │
-│                    │                              │
-└────────────────────┼──────────────────────────────┘
-                     │
-                     ▼
-            ┌────────────────┐
-            │  Email / SMS   │
-            │ (Ops Team)     │
-            └────────────────┘
+```mermaid
+graph TD
+    subgraph CloudWatch["CloudWatch Alarms"]
+        LA["Lambda Alarms<br/>(Errors, Throttles, Duration)"]
+        DA["DynamoDB Alarms<br/>(Throttles, System Errors)"]
+        SFA["Step Functions Alarms<br/>(Failures, Timeouts)"]
+    end
+    
+    LA --> SNS["SNS Alarm Topic"]
+    DA --> SNS
+    SFA --> SNS
+    
+    SNS --> Email["Email / SMS<br/>(Ops Team)"]
+    SNS --> PagerDuty["PagerDuty /<br/>Opsgenie"]
+    
+    style CloudWatch fill:#e1f5ff
+    style SNS fill:#fff3e0
+    style Email fill:#c8e6c9
+    style PagerDuty fill:#c8e6c9
 ```
 
 ### Usage
