@@ -163,10 +163,14 @@ sequenceDiagram
 
 ### 2. Start Local Kafka
 
+Start the local Kafka broker using Docker Compose:
+
 ```bash
-# Start Kafka and Zookeeper in Docker
-./scripts/start-local.sh
+# Start Kafka and Zookeeper
+docker-compose up -d
 ```
+
+*(Or use the helper script: `./scripts/start-local.sh`)*
 
 ### 3. Deploy Infrastructure
 
