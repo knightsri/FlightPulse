@@ -10,7 +10,22 @@ tracer = Tracer()
 metrics = Metrics()
 
 bedrock = boto3.client('bedrock-runtime')
-MODEL_ID = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
+ssm = boto3.client('ssm')
+
+# Read model ID from SSM Parameter Store (more secure than environment variable)
+BEDROCK_MODEL_PARAM = os.environ.get('BEDROCK_MODEL_PARAM', '/flightpulse/bedrock/model-id')
+
+def get_model_id() -> str:
+    """Retrieve Bedrock model ID from SSM Parameter Store."""
+    try:
+        response = ssm.get_parameter(Name=BEDROCK_MODEL_PARAM, WithDecryption=True)
+        return response['Parameter']['Value']
+    except Exception as e:
+        logger.warning(f"Failed to retrieve model ID from SSM: {e}, using default")
+        return 'anthropic.claude-3-haiku-20240307-v1:0'
+
+# Cache model ID for the lifetime of the Lambda container
+MODEL_ID = get_model_id()
 
 
 def generate_template_message(passenger: Dict[str, Any], flight_event: Dict[str, Any], message_type: str) -> Dict[str, str]:

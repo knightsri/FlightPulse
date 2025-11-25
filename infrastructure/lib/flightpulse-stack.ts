@@ -9,8 +9,10 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import * as path from 'path';
+import { NetworkConstruct } from './network-construct';
 
 export class FlightPulseStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -20,6 +22,21 @@ export class FlightPulseStack extends cdk.Stack {
     const removalPolicy = this.node.tryGetContext('removalPolicy') === 'destroy'
       ? cdk.RemovalPolicy.DESTROY
       : cdk.RemovalPolicy.RETAIN;
+
+    // Create VPC and network infrastructure
+    const network = new NetworkConstruct(this, 'Network', {
+      cidr: '10.0.0.0/16',
+      maxAzs: 2,
+      createVpcEndpoints: true,
+    });
+
+    // Store Bedrock model ID in SSM Parameter Store (SecureString)
+    const bedrockModelParam = new ssm.StringParameter(this, 'BedrockModelId', {
+      parameterName: '/flightpulse/bedrock/model-id',
+      stringValue: 'anthropic.claude-3-haiku-20240307-v1:0',
+      description: 'Bedrock model ID for LLM messenger Lambda',
+      tier: ssm.ParameterTier.STANDARD,
+    });
 
     // DynamoDB Table - Single Table Design
     const table = new dynamodb.Table(this, 'FlightPulseTable', {
@@ -67,6 +84,9 @@ export class FlightPulseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       tracing: lambda.Tracing.ACTIVE,
       logRetention: logs.RetentionDays.ONE_WEEK,
+      vpc: network.vpc,
+      vpcSubnets: { subnetType: cdk.aws_ec2.SubnetType.PRIVATE_ISOLATED },
+      securityGroups: [network.lambdaSecurityGroup],
     });
 
     table.grantReadWriteData(kafkaConsumer);
@@ -79,12 +99,15 @@ export class FlightPulseStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '../../lambdas/python/llm-messenger')),
       environment: {
         TABLE_NAME: table.tableName,
-        BEDROCK_MODEL_ID: 'anthropic.claude-3-haiku-20240307-v1:0',
+        BEDROCK_MODEL_PARAM: bedrockModelParam.parameterName, // Reference to SSM parameter
       },
       timeout: cdk.Duration.seconds(120), // Increased for LLM processing
       memorySize: 512,
       tracing: lambda.Tracing.ACTIVE,
       logRetention: logs.RetentionDays.ONE_WEEK,
+      vpc: network.vpc,
+      vpcSubnets: { subnetType: cdk.aws_ec2.SubnetType.PRIVATE_ISOLATED },
+      securityGroups: [network.lambdaSecurityGroup],
     });
     llmMessenger.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -94,6 +117,7 @@ export class FlightPulseStack extends cdk.Stack {
       ],
     }));
     table.grantReadData(llmMessenger);
+    bedrockModelParam.grantRead(llmMessenger); // Grant read access to SSM parameter
 
     // API Handlers Lambda (Node.js)
     const apiHandlers = new lambda.Function(this, 'ApiHandlers', {
@@ -114,6 +138,9 @@ export class FlightPulseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
       tracing: lambda.Tracing.ACTIVE,
       logRetention: logs.RetentionDays.ONE_WEEK,
+      vpc: network.vpc,
+      vpcSubnets: { subnetType: cdk.aws_ec2.SubnetType.PRIVATE_ISOLATED },
+      securityGroups: [network.lambdaSecurityGroup],
     });
 
     table.grantReadData(apiHandlers);
@@ -137,6 +164,9 @@ export class FlightPulseStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       tracing: lambda.Tracing.ACTIVE,
       logRetention: logs.RetentionDays.ONE_WEEK,
+      vpc: network.vpc,
+      vpcSubnets: { subnetType: cdk.aws_ec2.SubnetType.PRIVATE_ISOLATED },
+      securityGroups: [network.lambdaSecurityGroup],
     });
 
     eventBus.grantPutEvents(streamHandler);
