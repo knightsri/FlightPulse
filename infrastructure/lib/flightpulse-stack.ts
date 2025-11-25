@@ -134,15 +134,10 @@ export class FlightPulseStack extends cdk.Stack {
     const apiHandlers = new lambda.Function(this, 'ApiHandlers', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambdas/nodejs/api-handlers'), {
-        bundling: {
-          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-          command: [
-            'bash', '-c',
-            'npm install && npm run build && cp -r dist/* /asset-output/ && cp -r node_modules /asset-output/',
-          ],
-        },
-      }),
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../../lambdas/nodejs/api-handlers'),
+        this.getNodeJsBundlingOptions()
+      ),
       environment: {
         TABLE_NAME: table.tableName,
       },
@@ -160,15 +155,10 @@ export class FlightPulseStack extends cdk.Stack {
     const streamHandler = new lambda.Function(this, 'StreamHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambdas/nodejs/stream-handler'), {
-        bundling: {
-          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-          command: [
-            'bash', '-c',
-            'npm install && npm run build && cp -r dist/* /asset-output/ && cp -r node_modules /asset-output/',
-          ],
-        },
-      }),
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../../lambdas/nodejs/stream-handler'),
+        this.getNodeJsBundlingOptions()
+      ),
       environment: {
         EVENT_BUS_NAME: eventBus.eventBusName,
       },
@@ -649,5 +639,22 @@ export class FlightPulseStack extends cdk.Stack {
         level: sfn.LogLevel.ALL,
       },
     });
+  }
+
+  /**
+   * Helper function to create Node.js Lambda bundling options.
+   * Reusable across all Node.js Lambda functions to follow DRY principles.
+   */
+  private getNodeJsBundlingOptions() {
+    return {
+      bundling: {
+        image: lambda.Runtime.NODEJS_20_X.bundlingImage,
+        command: [
+          'bash',
+          '-c',
+          'npm install && npm run build && cp -r dist/* /asset-output/ && cp -r node_modules /asset-output/',
+        ],
+      },
+    };
   }
 }
