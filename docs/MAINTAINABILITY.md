@@ -196,9 +196,6 @@ coverageThreshold: {
   },
 }
 ```
-
----
-
 ## 🧪 Testing Best Practices
 
 ### 1. Test Organization

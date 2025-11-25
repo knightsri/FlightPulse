@@ -97,7 +97,8 @@ describe('FlightPulseStack', () => {
 
         test('creates VPC endpoints', () => {
             // At least one gateway endpoint (DynamoDB or S3)
-            template.resourceCountIs('AWS::EC2::VPCEndpoint', Match.anyValue());
+            const endpoints = template.findResources('AWS::EC2::VPCEndpoint');
+            expect(Object.keys(endpoints).length).toBeGreaterThan(0);
         });
 
         test('creates security group for Lambdas', () => {
@@ -136,7 +137,8 @@ describe('FlightPulseStack', () => {
 
         test('creates EventBridge rules', () => {
             // Should have multiple rules for different event types
-            template.resourceCountIs('AWS::Events::Rule', Match.anyValue());
+            const rules = template.findResources('AWS::Events::Rule');
+            expect(Object.keys(rules).length).toBeGreaterThan(0);
         });
     });
 
@@ -169,12 +171,14 @@ describe('FlightPulseStack', () => {
 
     describe('Monitoring', () => {
         test('creates CloudWatch alarms', () => {
-            template.resourceCountIs('AWS::CloudWatch::Alarm', Match.anyValue());
+            const alarms = template.findResources('AWS::CloudWatch::Alarm');
+            expect(Object.keys(alarms).length).toBeGreaterThan(0);
         });
 
         test('creates SNS topics for notifications', () => {
             // At least 2 topics: error notifications + alarms
-            template.resourceCountIs('AWS::SNS::Topic', Match.anyValue());
+            const topics = template.findResources('AWS::SNS::Topic');
+            expect(Object.keys(topics).length).toBeGreaterThan(0);
         });
 
         test('creates CloudWatch Dashboard', () => {

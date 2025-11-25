@@ -15,6 +15,7 @@ import { Construct } from 'constructs';
 import * as path from 'path';
 import { NetworkConstruct } from './network-construct';
 import { MonitoringConstruct } from './monitoring-construct';
+import { FlightPulseConstants } from './constants';
 
 export class FlightPulseStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -36,9 +37,10 @@ export class FlightPulseStack extends cdk.Stack {
     });
 
     // Store Bedrock model ID in SSM Parameter Store (SecureString)
+    // Store Bedrock model ID in SSM Parameter Store (SecureString)
     const bedrockModelParam = new ssm.StringParameter(this, 'BedrockModelId', {
-      parameterName: '/flightpulse/bedrock/model-id',
-      stringValue: 'anthropic.claude-3-haiku-20240307-v1:0',
+      parameterName: FlightPulseConstants.BEDROCK_MODEL_PARAM_NAME,
+      stringValue: FlightPulseConstants.BEDROCK_MODEL_ID,
       description: 'Bedrock model ID for LLM messenger Lambda',
       tier: ssm.ParameterTier.STANDARD,
     });
@@ -46,7 +48,7 @@ export class FlightPulseStack extends cdk.Stack {
     // DynamoDB Table - Single Table Design
     const table = new dynamodb.Table(this, 'FlightPulseTable', {
 
-      tableName: 'FlightPulseTable',
+      tableName: FlightPulseConstants.TABLE_NAME,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -69,7 +71,7 @@ export class FlightPulseStack extends cdk.Stack {
 
     // EventBridge Bus
     const eventBus = new events.EventBus(this, 'FlightPulseBus', {
-      eventBusName: 'flightpulse-bus',
+      eventBusName: FlightPulseConstants.EVENT_BUS_NAME,
     });
 
     // Dead Letter Queue for Step Functions failures
@@ -80,7 +82,7 @@ export class FlightPulseStack extends cdk.Stack {
     // SNS Topic for error notifications
     const errorTopic = new sns.Topic(this, 'WorkflowErrorTopic', {
       displayName: 'FlightPulse Workflow Errors',
-      topicName: 'flightpulse-workflow-errors',
+      topicName: FlightPulseConstants.WORKFLOW_ERROR_TOPIC_NAME,
     });
 
     // Kafka Consumer Lambda (Python)
@@ -101,7 +103,7 @@ export class FlightPulseStack extends cdk.Stack {
     });
 
     table.grantReadWriteData(kafkaConsumer);
-    eventBus.grantPutEvents(kafkaConsumer);
+    eventBus.grantPutEventsTo(kafkaConsumer);
 
     // LLM Messenger Lambda (Python)
     const llmMessenger = new lambda.Function(this, 'LLMMessenger', {
@@ -124,7 +126,7 @@ export class FlightPulseStack extends cdk.Stack {
       effect: iam.Effect.ALLOW,
       actions: ['bedrock:InvokeModel'],
       resources: [
-        `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0`
+        `arn:aws:bedrock:${this.region}::foundation-model/${FlightPulseConstants.BEDROCK_MODEL_ID}`
       ],
     }));
     table.grantReadData(llmMessenger);
@@ -170,7 +172,7 @@ export class FlightPulseStack extends cdk.Stack {
       securityGroups: [network.lambdaSecurityGroup],
     });
 
-    eventBus.grantPutEvents(streamHandler);
+    eventBus.grantPutEventsTo(streamHandler);
 
     // DynamoDB Stream → Stream Handler
     streamHandler.addEventSourceMapping('StreamEventSource', {
@@ -185,7 +187,8 @@ export class FlightPulseStack extends cdk.Stack {
     const gateChangeWorkflow = this.createGateChangeWorkflow(this, table, llmMessenger, eventBus, dlq, errorTopic);
 
     // EventBridge Rules
-    eventBus.addRule('DelayMinorRule', {
+    new events.Rule(this, 'DelayMinorRule', {
+      eventBus,
       eventPattern: {
         source: ['flightpulse.kafka-consumer'],
         detailType: ['flight.delay.minor'],
@@ -193,7 +196,8 @@ export class FlightPulseStack extends cdk.Stack {
       targets: [new targets.SfnStateMachine(delayWorkflow)],
     });
 
-    eventBus.addRule('DelayMajorRule', {
+    new events.Rule(this, 'DelayMajorRule', {
+      eventBus,
       eventPattern: {
         source: ['flightpulse.kafka-consumer'],
         detailType: ['flight.delay.major'],
@@ -201,7 +205,8 @@ export class FlightPulseStack extends cdk.Stack {
       targets: [new targets.SfnStateMachine(delayWorkflow)],
     });
 
-    eventBus.addRule('DelaySevereRule', {
+    new events.Rule(this, 'DelaySevereRule', {
+      eventBus,
       eventPattern: {
         source: ['flightpulse.kafka-consumer'],
         detailType: ['flight.delay.severe'],
@@ -209,7 +214,8 @@ export class FlightPulseStack extends cdk.Stack {
       targets: [new targets.SfnStateMachine(delayWorkflow)],
     });
 
-    eventBus.addRule('CancellationRule', {
+    new events.Rule(this, 'CancellationRule', {
+      eventBus,
       eventPattern: {
         source: ['flightpulse.kafka-consumer'],
         detailType: ['flight.cancelled'],
@@ -217,7 +223,8 @@ export class FlightPulseStack extends cdk.Stack {
       targets: [new targets.SfnStateMachine(cancellationWorkflow)],
     });
 
-    eventBus.addRule('GateChangeRule', {
+    new events.Rule(this, 'GateChangeRule', {
+      eventBus,
       eventPattern: {
         source: ['flightpulse.kafka-consumer'],
         detailType: ['flight.gate_change'],
@@ -226,25 +233,27 @@ export class FlightPulseStack extends cdk.Stack {
     });
 
     // Notification rules (mock to CloudWatch)
-    eventBus.addRule('NotificationEmailRule', {
+    new events.Rule(this, 'NotificationEmailRule', {
+      eventBus,
       eventPattern: {
         detailType: ['notification.email'],
       },
       targets: [new targets.CloudWatchLogGroup(
         new logs.LogGroup(this, 'EmailNotificationsLog', {
-          logGroupName: '/flightpulse/notifications/email',
+          logGroupName: FlightPulseConstants.LOG_GROUP_NAMES.EMAIL_NOTIFICATIONS,
           retention: logs.RetentionDays.ONE_WEEK,
         })
       )],
     });
 
-    eventBus.addRule('NotificationSmsRule', {
+    new events.Rule(this, 'NotificationSmsRule', {
+      eventBus,
       eventPattern: {
         detailType: ['notification.sms'],
       },
       targets: [new targets.CloudWatchLogGroup(
         new logs.LogGroup(this, 'SmsNotificationsLog', {
-          logGroupName: '/flightpulse/notifications/sms',
+          logGroupName: FlightPulseConstants.LOG_GROUP_NAMES.SMS_NOTIFICATIONS,
           retention: logs.RetentionDays.ONE_WEEK,
         })
       )],
@@ -252,7 +261,7 @@ export class FlightPulseStack extends cdk.Stack {
 
     // API Gateway Access Logs
     const apiAccessLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
-      logGroupName: '/aws/apigateway/flightpulse-api',
+      logGroupName: FlightPulseConstants.LOG_GROUP_NAMES.API_ACCESS,
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -284,10 +293,37 @@ export class FlightPulseStack extends cdk.Stack {
       },
       // Enable basic throttling to protect against abuse
       defaultMethodOptions: {
-        throttlingRateLimit: 100, // 100 requests per second
-        throttlingBurstLimit: 200,
+        apiKeyRequired: true, // Require API Key for all methods
       },
     });
+
+    // Create API Key
+    const apiKey = api.addApiKey('FlightPulseApiKey', {
+      apiKeyName: 'flightpulse-api-key',
+      description: 'API Key for FlightPulse client',
+    });
+
+    // Create Usage Plan
+    const plan = api.addUsagePlan('FlightPulseUsagePlan', {
+      name: 'flightpulse-usage-plan',
+      throttle: {
+        rateLimit: 100,
+        burstLimit: 200,
+      },
+      quota: {
+        limit: 10000,
+        period: apigateway.Period.DAY,
+      },
+    });
+
+    // Associate API Key and Stage with Usage Plan
+    plan.addApiKey(apiKey);
+    plan.addApiStage({
+      stage: api.deploymentStage,
+    });
+
+    // Output API Key ID (Value is secret, so only ID is output)
+    new cdk.CfnOutput(this, 'ApiKeyId', { value: apiKey.keyId });
 
     const apiIntegration = new apigateway.LambdaIntegration(apiHandlers);
 
@@ -335,10 +371,11 @@ export class FlightPulseStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ApiAccessLogGroup', { value: apiAccessLogGroup.logGroupName });
 
     // Apply standard tags to all resources
-    cdk.Tags.of(this).add('Project', 'FlightPulse');
-    cdk.Tags.of(this).add('Environment', environment);
-    cdk.Tags.of(this).add('ManagedBy', 'CDK');
-    cdk.Tags.of(this).add('CostCenter', 'Engineering');
+    // Apply standard tags to all resources
+    cdk.Tags.of(this).add(FlightPulseConstants.TAGS.PROJECT, FlightPulseConstants.PROJECT_NAME);
+    cdk.Tags.of(this).add(FlightPulseConstants.TAGS.ENVIRONMENT, environment);
+    cdk.Tags.of(this).add(FlightPulseConstants.TAGS.MANAGED_BY, 'CDK');
+    cdk.Tags.of(this).add(FlightPulseConstants.TAGS.COST_CENTER, 'Engineering');
   }
 
   private createDelayWorkflow(
@@ -361,15 +398,18 @@ export class FlightPulseStack extends cdk.Stack {
     });
 
     // GetAffectedBookings with error handling
-    const getBookings = new sfnTasks.DynamoDBQuery(scope, 'GetAffectedBookings', {
-      table,
-      keyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      expressionAttributeValues: {
-        ':pk': sfnTasks.DynamoAttributeValue.fromString(
-          sfn.JsonPath.format('FLIGHT#{}', sfn.JsonPath.stringAt('$.detail.flight_id'))
-        ),
-        ':sk': sfnTasks.DynamoAttributeValue.fromString('BOOKING#'),
+    const getBookings = new sfnTasks.CallAwsService(scope, 'GetAffectedBookings', {
+      service: 'dynamodb',
+      action: 'query',
+      parameters: {
+        TableName: table.tableName,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': { S: sfn.JsonPath.format('FLIGHT#{}', sfn.JsonPath.stringAt('$.detail.flight_id')) },
+          ':sk': { S: 'BOOKING#' },
+        },
       },
+      iamResources: [table.tableArn],
     }).addCatch(notifyFailure, {
       resultPath: '$.error',
     });
@@ -383,7 +423,7 @@ export class FlightPulseStack extends cdk.Stack {
       .otherwise(new sfn.Pass(scope, 'NoBookingsFound'));
 
     // UpdateFlightStatus with error handling
-    const updateFlight = new sfnTasks.DynamoDBUpdateItem(scope, 'UpdateFlightStatus', {
+    const updateFlight = new sfnTasks.DynamoUpdateItem(scope, 'UpdateFlightStatus', {
       table,
       key: {
         PK: sfnTasks.DynamoAttributeValue.fromString(
@@ -422,7 +462,7 @@ export class FlightPulseStack extends cdk.Stack {
       tracingEnabled: true,
       logs: {
         destination: new logs.LogGroup(scope, 'DelayWorkflowLogs', {
-          logGroupName: '/aws/stepfunctions/DelayNotification',
+          logGroupName: FlightPulseConstants.LOG_GROUP_NAMES.DELAY_WORKFLOW,
           retention: logs.RetentionDays.ONE_WEEK,
         }),
         level: sfn.LogLevel.ALL,
@@ -438,7 +478,7 @@ export class FlightPulseStack extends cdk.Stack {
     messageType: string = 'DELAY_NOTIFICATION'
   ): sfn.Map {
     // GetPassengerDetails
-    const getPassenger = new sfnTasks.DynamoDBGetItem(scope, 'GetPassengerDetails', {
+    const getPassenger = new sfnTasks.DynamoGetItem(scope, 'GetPassengerDetails', {
       table,
       key: {
         PK: sfnTasks.DynamoAttributeValue.fromString(
@@ -472,8 +512,8 @@ export class FlightPulseStack extends cdk.Stack {
             }),
             detailType: 'notification.email',
             source: 'flightpulse.workflow',
+            eventBus,
           }],
-          eventBus,
         })
       )
       .otherwise(new sfn.Pass(scope, 'SkipEmail'));
@@ -489,8 +529,8 @@ export class FlightPulseStack extends cdk.Stack {
             }),
             detailType: 'notification.sms',
             source: 'flightpulse.workflow',
+            eventBus,
           }],
-          eventBus,
         })
       )
       .otherwise(new sfn.Pass(scope, 'SkipSms'));
@@ -522,22 +562,25 @@ export class FlightPulseStack extends cdk.Stack {
     dlq: sqs.Queue,
     errorTopic: sns.Topic
   ): sfn.StateMachine {
-    const getBookings = new sfnTasks.DynamoDBQuery(scope, 'GetAffectedBookings', {
-      table,
-      keyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      expressionAttributeValues: {
-        ':pk': sfnTasks.DynamoAttributeValue.fromString(
-          sfn.JsonPath.format('FLIGHT#{}', sfn.JsonPath.stringAt('$.detail.flight_id'))
-        ),
-        ':sk': sfnTasks.DynamoAttributeValue.fromString('BOOKING#'),
+    const getBookings = new sfnTasks.CallAwsService(scope, 'GetAffectedBookings', {
+      service: 'dynamodb',
+      action: 'query',
+      parameters: {
+        TableName: table.tableName,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': { S: sfn.JsonPath.format('FLIGHT#{}', sfn.JsonPath.stringAt('$.detail.flight_id')) },
+          ':sk': { S: 'BOOKING#' },
+        },
       },
+      iamResources: [table.tableArn],
     });
 
     const markForRebooking = new sfn.Map(scope, 'MarkBookingsForRebooking', {
       itemsPath: '$.Items',
       maxConcurrency: 10,
     }).iterator(
-      new sfnTasks.DynamoDBUpdateItem(scope, 'UpdateBookingStatus', {
+      new sfnTasks.DynamoUpdateItem(scope, 'UpdateBookingStatus', {
         table,
         key: {
           PK: sfnTasks.DynamoAttributeValue.fromString(
@@ -553,7 +596,7 @@ export class FlightPulseStack extends cdk.Stack {
       })
     );
 
-    const updateFlight = new sfnTasks.DynamoDBUpdateItem(scope, 'UpdateFlightStatus', {
+    const updateFlight = new sfnTasks.DynamoUpdateItem(scope, 'UpdateFlightStatus', {
       table,
       key: {
         PK: sfnTasks.DynamoAttributeValue.fromString(
@@ -582,7 +625,7 @@ export class FlightPulseStack extends cdk.Stack {
       tracingEnabled: true,
       logs: {
         destination: new logs.LogGroup(scope, 'CancellationWorkflowLogs', {
-          logGroupName: '/aws/stepfunctions/CancellationNotification',
+          logGroupName: FlightPulseConstants.LOG_GROUP_NAMES.CANCELLATION_WORKFLOW,
           retention: logs.RetentionDays.ONE_WEEK,
         }),
         level: sfn.LogLevel.ALL,
@@ -598,7 +641,7 @@ export class FlightPulseStack extends cdk.Stack {
     dlq: sqs.Queue,
     errorTopic: sns.Topic
   ): sfn.StateMachine {
-    const updateGate = new sfnTasks.DynamoDBUpdateItem(scope, 'UpdateFlightGate', {
+    const updateGate = new sfnTasks.DynamoUpdateItem(scope, 'UpdateFlightGate', {
       table,
       key: {
         PK: sfnTasks.DynamoAttributeValue.fromString(
@@ -612,15 +655,18 @@ export class FlightPulseStack extends cdk.Stack {
       },
     });
 
-    const getBookings = new sfnTasks.DynamoDBQuery(scope, 'GetAffectedBookings', {
-      table,
-      keyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      expressionAttributeValues: {
-        ':pk': sfnTasks.DynamoAttributeValue.fromString(
-          sfn.JsonPath.format('FLIGHT#{}', sfn.JsonPath.stringAt('$.detail.flight_id'))
-        ),
-        ':sk': sfnTasks.DynamoAttributeValue.fromString('BOOKING#'),
+    const getBookings = new sfnTasks.CallAwsService(scope, 'GetAffectedBookings', {
+      service: 'dynamodb',
+      action: 'query',
+      parameters: {
+        TableName: table.tableName,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': { S: sfn.JsonPath.format('FLIGHT#{}', sfn.JsonPath.stringAt('$.detail.flight_id')) },
+          ':sk': { S: 'BOOKING#' },
+        },
       },
+      iamResources: [table.tableArn],
     });
 
     const definition = updateGate
@@ -633,7 +679,7 @@ export class FlightPulseStack extends cdk.Stack {
       tracingEnabled: true,
       logs: {
         destination: new logs.LogGroup(scope, 'GateChangeWorkflowLogs', {
-          logGroupName: '/aws/stepfunctions/GateChangeNotification',
+          logGroupName: FlightPulseConstants.LOG_GROUP_NAMES.GATE_CHANGE_WORKFLOW,
           retention: logs.RetentionDays.ONE_WEEK,
         }),
         level: sfn.LogLevel.ALL,
