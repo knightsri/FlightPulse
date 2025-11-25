@@ -4,7 +4,7 @@
 
 FlightPulse is a serverless, event-driven flight operations system that demonstrates modern AWS architecture patterns. The system ingests flight operation events (delays, cancellations, gate changes) from Kafka, enriches and routes them through EventBridge, orchestrates multi-step notification workflows via Step Functions, and delivers personalized passenger notifications using LLM-generated messaging.
 
-**Purpose:** Portfolio project demonstrating proficiency in AWS serverless stack for Southwest Airlines technical interview.
+**Purpose:** Portfolio project demonstrating proficiency in AWS serverless stack for modern airline operations.
 
 **Scope:** Core event flow with working end-to-end demo capability (not production-ready).
 
@@ -12,101 +12,103 @@ FlightPulse is a serverless, event-driven flight operations system that demonstr
 
 ## Architecture
 
+```mermaid
+graph TD
+    subgraph "Event Ingestion"
+        Simulator["Event Simulator<br/>(Python)"]
+        Kafka["Apache Kafka<br/>(Docker)<br/>topic: flight-operations"]
+        Simulator -->|produces| Kafka
+    end
+
+    subgraph "Event Processing"
+        Consumer["Kafka Consumer Lambda<br/>(Python)<br/>• Validates<br/>• Enriches<br/>• Categorizes"]
+        Kafka -->|consumes| Consumer
+    end
+
+    subgraph "Event Routing"
+        EventBridge["Amazon EventBridge<br/>Rules: flight.delay.*, flight.cancelled, etc."]
+        Consumer -->|publishes| EventBridge
+    end
+
+    subgraph "Workflow Orchestration"
+        SF["Step Functions<br/>• Query bookings<br/>• Get passenger details<br/>• Generate LLM message<br/>• Send notifs<br/>• Update status"]
+        EventBridge -->|triggers| SF
+    end
+
+    subgraph "Data & Services"
+        DynamoDB[("DynamoDB<br/>Single Table")]
+        LLM["LLM Messenger Lambda<br/>(Python)<br/>• Claude/Bedrock<br/>• Personalized messaging"]
+        
+        SF -->|query/update| DynamoDB
+        SF -->|invoke| LLM
+        LLM -->|read| DynamoDB
+    end
+
+    subgraph "Change Detection"
+        StreamHandler["Stream Handler Lambda<br/>(Node.js)<br/>• Detect changes<br/>• Publish events"]
+        DynamoDB -->|streams| StreamHandler
+        StreamHandler -->|publishes| EventBridge
+    end
+
+    subgraph "API Layer"
+        APIGateway["API Gateway<br/>(REST)"]
+        APIHandlers["API Handlers Lambda<br/>(Node.js)"]
+        APIGateway -->|invoke| APIHandlers
+        APIHandlers -->|query| DynamoDB
+    end
+
+    subgraph "Notifications"
+        CW["CloudWatch Logs<br/>(Mock Notifications)"]
+        EventBridge -->|notification.*| CW
+    end
+
+    style Simulator fill:#e1f5ff
+    style Kafka fill:#e1f5ff
+    style Consumer fill:#fff4e1
+    style EventBridge fill:#ffe1f5
+    style SF fill:#e1ffe1
+    style DynamoDB fill:#f0e1ff
+    style LLM fill:#fff4e1
+    style StreamHandler fill:#e1f5ff
+    style APIGateway fill:#ffe1f5
+    style APIHandlers fill:#e1f5ff
+    style CW fill:#e1ffe1
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              FLIGHTPULSE ARCHITECTURE                         │
-└──────────────────────────────────────────────────────────────────────────────┘
 
-                        ┌─────────────────┐
-                        │  Event Simulator │
-                        │    (Python)      │
-                        └────────┬────────┘
-                                 │ produces
-                                 ▼
-                        ┌─────────────────┐
-                        │  Apache Kafka   │
-                        │   (Docker)      │
-                        │                 │
-                        │ topic: flight-  │
-                        │ operations      │
-                        └────────┬────────┘
-                                 │ consumes
-                                 ▼
-                        ┌─────────────────┐
-                        │  Kafka Consumer │
-                        │  Lambda (Python)│
-                        │                 │
-                        │ • Validates     │
-                        │ • Enriches      │
-                        │ • Categorizes   │
-                        └────────┬────────┘
-                                 │ publishes
-                                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            AMAZON EVENTBRIDGE                                 │
-│                                                                              │
-│  Rules:                                                                      │
-│  • flight.delay.*      → Step Functions (Delay Notification Workflow)        │
-│  • flight.cancelled    → Step Functions (Cancellation Workflow)              │
-│  • flight.gate_change  → Step Functions (Gate Change Workflow)               │
-│  • notification.*      → CloudWatch Logs (simulated send)                    │
-└─────────────────────────────────┬────────────────────────────────────────────┘
-                                  │ triggers
-                                  ▼
-                        ┌─────────────────┐
-                        │ Step Functions  │
-                        │                 │
-                        │ 1. Query affected│
-                        │    bookings     │
-                        │ 2. Get passenger │
-                        │    details      │
-                        │ 3. Generate LLM │
-                        │    message      │
-                        │ 4. Send notifs  │
-                        │ 5. Update status│
-                        └───────┬─┬───────┘
-                                │ │
-              ┌─────────────────┘ └─────────────────┐
-              │                                     │
-              ▼                                     ▼
-    ┌─────────────────┐                   ┌─────────────────┐
-    │   DynamoDB      │                   │  LLM Messenger  │
-    │  (Single Table) │                   │  Lambda (Python)│
-    │                 │                   │                 │
-    │ • Flights       │                   │ • Claude/Bedrock│
-    │ • Passengers    │                   │ • Personalized  │
-    │ • Bookings      │                   │   messaging     │
-    └────────┬────────┘                   └─────────────────┘
-             │
-             │ streams
-             ▼
-    ┌─────────────────┐
-    │ Stream Handler  │
-    │ Lambda (Node.js)│
-    │                 │
-    │ • Detect changes│
-    │ • Publish events│
-    └─────────────────┘
+---
 
+### Event Flow Diagram
 
-    ┌─────────────────┐         ┌─────────────────┐
-    │  API Gateway    │────────▶│  API Handlers   │
-    │    (REST)       │         │ Lambda (Node.js)│
-    │                 │         │                 │
-    │ /flights        │         │ • Query flights │
-    │ /passengers     │         │ • Get bookings  │
-    │ /bookings       │         │ • Health check  │
-    └─────────────────┘         └─────────────────┘
+```mermaid
+sequenceDiagram
+    participant Simulator as Event Simulator
+    participant Kafka as Apache Kafka
+    participant Consumer as Kafka Consumer Lambda
+    participant EB as EventBridge
+    participant SF as Step Functions
+    participant DB as DynamoDB
+    participant LLM as LLM Messenger
+    participant CW as CloudWatch Logs
 
-
-    ┌──────────────────────────────────────────────┐
-    │              OBSERVABILITY                    │
-    │                                              │
-    │  • CloudWatch Logs (all Lambdas)             │
-    │  • CloudWatch Metrics (custom + standard)    │
-    │  • X-Ray Tracing (end-to-end)               │
-    │  • CloudWatch Dashboard                      │
-    └──────────────────────────────────────────────┘
+    Simulator->>Kafka: Produce event<br/>(FLIGHT_DELAY, etc.)
+    Kafka->>Consumer: Consume event
+    Consumer->>DB: Enrich with flight details
+    Consumer->>EB: Publish enriched event<br/>(flight.delay.*, etc.)
+    
+    EB->>SF: Trigger workflow
+    SF->>DB: Query affected bookings
+    DB-->>SF: Return bookings list
+    
+    loop For each booking
+        SF->>DB: Get passenger details
+        DB-->>SF: Return passenger data
+        SF->>LLM: Generate personalized message
+        LLM-->>SF: Return email/SMS content
+        SF->>EB: Publish notification events
+        EB->>CW: Log notification (mock send)
+    end
+    
+    SF->>DB: Update flight status
 ```
 
 ---
@@ -717,6 +719,30 @@ Distribute across flights so each flight has 3-4 bookings.
 ---
 
 ## Test Scenarios
+
+```mermaid
+graph TD
+    S1[SW1234: 25 min delay] -->|Kafka| C1[Consumer]
+    C1 -->|categorize| E1[flight.delay.minor]
+    E1 --> W1[Delay Workflow]
+    W1 --> N1[Notifications Sent]
+    
+    S2[SW5678: 90 min delay] -->|Kafka| C2[Consumer]
+    C2 -->|categorize| E2[flight.delay.major]
+    E2 --> W2[Delay Workflow]
+    W2 --> N2[A-LIST Priority Messages]
+    
+    S3[SW9012: Cancelled] -->|Kafka| C3[Consumer]
+    C3 --> E3[flight.cancelled]
+    E3 --> W3[Cancellation Workflow]
+    W3 --> U3[Mark NEEDS_REBOOKING]
+    W3 --> N3[Apologetic Messages]
+    
+    S4[SW3456: Gate A5 → D15] -->|Kafka| C4[Consumer]
+    C4 -->|categorize| E4[flight.gate_change]
+    E4 --> W4[Gate Change Workflow]
+    W4 --> N4[Urgent Terminal Change SMS]
+```
 
 ### Scenario 1: Minor Delay
 

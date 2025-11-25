@@ -7,10 +7,20 @@ const docClient = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = process.env.TABLE_NAME!;
 
+// Structured Logger
+const logger = {
+  info: (message: string, data?: any) => console.log(JSON.stringify({ level: 'INFO', message, ...data })),
+  error: (message: string, error?: any) => console.error(JSON.stringify({ level: 'ERROR', message, error: error?.message || error, stack: error?.stack })),
+  warn: (message: string, data?: any) => console.warn(JSON.stringify({ level: 'WARN', message, ...data })),
+};
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const path = event.path;
   const method = event.httpMethod;
   const pathParameters = event.pathParameters || {};
+  const requestId = event.requestContext?.requestId;
+
+  logger.info('Processing request', { path, method, requestId });
 
   try {
     // Health check
@@ -42,6 +52,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       );
 
       if (!result.Item) {
+        logger.warn('Flight not found', { flightId });
         return {
           statusCode: 404,
           headers: {
@@ -149,6 +160,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       );
 
       if (!result.Item) {
+        logger.warn('Passenger not found', { passengerId });
         return {
           statusCode: 404,
           headers: {
@@ -211,6 +223,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       );
 
       if (!result.Item) {
+        logger.warn('Booking not found', { bookingId });
         return {
           statusCode: 404,
           headers: {
@@ -229,6 +242,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
+    logger.warn('Route not found', { path, method });
     return {
       statusCode: 404,
       headers: {
@@ -237,7 +251,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       body: JSON.stringify({ error: 'Not found' }),
     };
   } catch (error: any) {
-    console.error('Error:', error);
+    logger.error('Internal Server Error', error);
     return {
       statusCode: 500,
       headers: {

@@ -2,7 +2,21 @@
 
 Serverless, event-driven flight operations system demonstrating modern AWS architecture patterns. The system ingests flight operation events (delays, cancellations, gate changes) from Kafka, enriches and routes them through EventBridge, orchestrates multi-step notification workflows via Step Functions, and delivers personalized passenger notifications using LLM-generated messaging.
 
-**Purpose:** Portfolio project demonstrating proficiency in AWS serverless stack for Southwest Airlines technical interview.
+**Purpose:** Portfolio project demonstrating proficiency in AWS serverless stack for modern airline operations.
+
+## 📚 Documentation
+
+Detailed documentation for specific aspects of the system:
+
+- **[System Specification](docs/flightpulse-spec.md)**: Architecture, data model, and event schemas.
+- **[Security Enhancements](docs/SECURITY_ENHANCEMENTS.md)**: Overview of security improvements.
+- **[VPC & SSM Security](docs/VPC_SSM_SECURITY.md)**: Network isolation and secrets management.
+- **[Reliability & Error Handling](docs/RELIABILITY_ERROR_HANDLING.md)**: Fault tolerance and recovery strategies.
+- **[Observability](docs/OBSERVABILITY.md)**: Logging, monitoring, and tracing.
+- **[Maintainability](docs/MAINTAINABILITY.md)**: Testing, CI/CD, and code quality.
+- **[Code Review](docs/CODE_REVIEW.md)**: Findings and recommendations.
+
+---
 
 ## Architecture
 
@@ -118,6 +132,16 @@ sequenceDiagram
     SF->>DB: Update flight status
 ```
 
+## 🔐 Security Features
+
+- **VPC Isolation**: All Lambdas run in private subnets with no internet access.
+- **VPC Endpoints**: Direct connections to AWS services (DynamoDB, S3, EventBridge, etc.) without NAT Gateways.
+- **SSM Parameter Store**: Secrets (like Bedrock Model ID) are stored securely and injected at runtime.
+- **Least Privilege IAM**: Policies are scoped to specific resources and actions.
+- **Data Protection**: DynamoDB encryption at rest and HTTPS enforcement.
+
+---
+
 ## Prerequisites
 
 - **AWS Account** with appropriate permissions
@@ -139,10 +163,14 @@ sequenceDiagram
 
 ### 2. Start Local Kafka
 
+Start the local Kafka broker using Docker Compose:
+
 ```bash
-# Start Kafka and Zookeeper in Docker
-./scripts/start-local.sh
+# Start Kafka and Zookeeper
+docker-compose up -d
 ```
+
+*(Or use the helper script: `./scripts/start-local.sh`)*
 
 ### 3. Deploy Infrastructure
 
@@ -170,6 +198,19 @@ cdk bootstrap
 ./scripts/run-scenario.sh 3  # Cancellation
 ./scripts/run-scenario.sh 4  # Gate change
 ```
+
+## 🧪 Testing
+
+### Unit Tests
+Run the CDK unit tests to validate infrastructure logic:
+```bash
+npm test
+```
+
+### Integration Tests
+See [Test Scenarios](#test-scenarios) for end-to-end testing.
+
+---
 
 ## Usage Guide
 
@@ -704,6 +745,18 @@ flightpulse/
 ├── package.json                       # Root package for CDK
 ├── cdk.json                          # CDK configuration
 ├── tsconfig.json                     # TypeScript config
+│
+├── cdk.json                          # CDK configuration
+├── tsconfig.json                     # TypeScript config
+│
+├── docs/                             # 📚 Project documentation
+│   ├── flightpulse-spec.md           # System specification
+│   ├── SECURITY_ENHANCEMENTS.md      # Security features
+│   ├── VPC_SSM_SECURITY.md           # Network security
+│   ├── RELIABILITY_ERROR_HANDLING.md # Error handling
+│   ├── OBSERVABILITY.md              # Monitoring guides
+│   ├── MAINTAINABILITY.md            # Testing & CI/CD
+│   └── CODE_REVIEW.md                # Review report
 │
 ├── infrastructure/                    # CDK Infrastructure Code
 │   ├── bin/
