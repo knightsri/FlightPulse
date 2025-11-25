@@ -16,6 +16,11 @@ export class FlightPulseStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Get removal policy from context (defaults to RETAIN for production safety)
+    const removalPolicy = this.node.tryGetContext('removalPolicy') === 'destroy'
+      ? cdk.RemovalPolicy.DESTROY
+      : cdk.RemovalPolicy.RETAIN;
+
     // DynamoDB Table - Single Table Design
     const table = new dynamodb.Table(this, 'FlightPulseTable', {
 
@@ -24,7 +29,7 @@ export class FlightPulseStack extends cdk.Stack {
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // For demo only
+      removalPolicy: removalPolicy, // Configurable via cdk.json context
     });
 
     // GSI1: Status-based queries
@@ -76,13 +81,17 @@ export class FlightPulseStack extends cdk.Stack {
         TABLE_NAME: table.tableName,
         BEDROCK_MODEL_ID: 'anthropic.claude-3-haiku-20240307-v1:0',
       },
-      timeout: cdk.Duration.seconds(60),
+      timeout: cdk.Duration.seconds(120), // Increased for LLM processing
+      memorySize: 512,
       tracing: lambda.Tracing.ACTIVE,
       logRetention: logs.RetentionDays.ONE_WEEK,
     });
     llmMessenger.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
       actions: ['bedrock:InvokeModel'],
-      resources: ['arn:aws:bedrock:*::foundation-model/anthropic.claude-3-haiku-20240307-v1:0'],
+      resources: [
+        `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0`
+      ],
     }));
     table.grantReadData(llmMessenger);
 
